@@ -81,6 +81,13 @@ class Client {
       cb(null, data.slice(8, 8 + size))
     })
   }
+  uploadStream (id, cb) {
+    if (!cb) cb = () => {}
+    return BufferList((err, data) => {
+      if (err) return cb(err)
+      this.upload(id, data, cb)
+    })
+  }
 }
 
 module.exports = Client
