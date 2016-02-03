@@ -1,0 +1,16 @@
+{
+  "name": "a19js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Christoph Witzko <npm@christophwitzko.com> (http://christophwitzko.com/)",
+  "license": "MIT",
+  "dependencies": {
+    "bl": "^1.0.1",
+    "long": "^3.0.3",
+    "split-buffer": "^1.0.0"
+  }
+}
