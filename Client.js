@@ -3,8 +3,9 @@ const net = require('net')
 const url = require('url')
 
 const BufferList = require('bl')
-const Long = require('long')
 const split = require('split-buffer')
+
+const util = require('./util')
 
 class Client {
   constructor (surl) {
@@ -17,23 +18,6 @@ class Client {
       DOWNLOAD: new Buffer([1]),
       LIST: new Buffer([2])
     }
-  }
-  _bufferToLong (buf) {
-    if (buf.length !== 8) return 0
-    return Long.fromBits(
-      parseInt(buf.slice(4, 8).toString('hex'), 16),
-      parseInt(buf.slice(0, 4).toString('hex'), 16)
-    ).toNumber()
-  }
-  _intToBuffer (str) {
-    return new Buffer(('00000000' + str.toString(16)).substr(-8), 'hex')
-  }
-  _longToBuffer (long) {
-    const val = Long.fromNumber(long)
-    return Buffer.concat([
-      this._intToBuffer(val.getHighBitsUnsigned()),
-      this._intToBuffer(val.getLowBitsUnsigned())]
-    )
   }
   _send (op, data, cb) {
     if (typeof data === 'function' && !cb) {
@@ -55,16 +39,16 @@ class Client {
     this._send('LIST', (err, data) => {
       if (err) return cb(err)
       const chunks = split(data, 8)
-      const size = this._bufferToLong(chunks.shift())
+      const size = util.bufferToLong(chunks.shift())
       if (chunks.pop()[0] !== 0) return cb(new Error('invalid status'))
       if (chunks.length !== size) return cb(new Error('size mismatch'))
-      cb(null, chunks.map(this._bufferToLong.bind(this)))
+      cb(null, chunks.map(util.bufferToLong.bind(this)))
     })
   }
   upload (id, data, cb) {
     const payload = Buffer.concat([
-      this._longToBuffer(id),
-      this._longToBuffer(data.length),
+      util.longToBuffer(id),
+      util.longToBuffer(data.length),
       data
     ])
     this._send('UPLOAD', payload, (err, data) => {
@@ -74,9 +58,9 @@ class Client {
     })
   }
   download (id, cb) {
-    this._send('DOWNLOAD', this._longToBuffer(id), (err, data) => {
+    this._send('DOWNLOAD', util.longToBuffer(id), (err, data) => {
       if (err) return cb(err)
-      const size = this._bufferToLong(data.slice(0, 8))
+      const size = util.bufferToLong(data.slice(0, 8))
       if (data.slice(8 + size)[0] !== 0) return cb(new Error('invalid status'))
       cb(null, data.slice(8, 8 + size))
     })
