@@ -1,6 +1,8 @@
 'use strict'
-const level = require('level')
 const net = require('net')
+
+const level = require('level')
+const BufferList = require('bl')
 
 const util = require('./util')
 
@@ -52,35 +54,27 @@ function handleList (socket) {
   })
 }
 
-const server = net.createServer((socket) => {
+const server = net.createServer({
+    allowHalfOpen: true
+  }, (socket) => {
   socket.setTimeout(10000, () => {
-    socket.end()
+    socket.destroy()
   })
-  const data = []
-  const timeout = () => {
-    return setTimeout(() => {
-      const all = Buffer.concat(data)
-      if (validHash.compare(all.slice(0, 16)) !== 0) {
-        return socket.end()
-      }
-      const op = all.slice(16, 17)[0]
-      if (op === 0) return handleUpload(socket, all.slice(17))
-      if (op === 1) return handleDownload(socket, all.slice(17))
-      if (op === 2) return handleList(socket)
-      socket.end(new Buffer([2]))
-    }, 100)
-  }
-  let next = timeout()
-  socket.on('data', (chunk) => {
-    clearTimeout(next)
-    data.push(chunk)
-    next = timeout()
-  })
+  socket.pipe(BufferList((err, data) => {
+    if (validHash.compare(data.slice(0, 16)) !== 0) {
+      return socket.end(new Buffer([3]))
+    }
+    const op = data.slice(16, 17)[0]
+    if (op === 0) return handleUpload(socket, data.slice(17))
+    if (op === 1) return handleDownload(socket, data.slice(17))
+    if (op === 2) return handleList(socket)
+    socket.end(new Buffer([2]))
+  }))
 })
 
 server.listen(8080)
 
 process.on('beforeExit', () => {
-  console.log('close')
+  console.log('closing db...')
   db.close()
 })
