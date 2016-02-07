@@ -31,7 +31,7 @@ class Client {
     if (data) sendData.append(data)
     const socket = net.createConnection(this._port, this._server)
     socket.on('connect', () => {
-      socket.write(sendData.slice(0))
+      socket.end(sendData.slice(0))
     })
     socket.pipe(BufferList(cb))
   }
@@ -40,7 +40,7 @@ class Client {
       if (err) return cb(err)
       const chunks = split(data, 8)
       const size = util.bufferToLong(chunks.shift())
-      if (chunks.pop()[0] !== 0) return cb(new Error('invalid status'))
+      if (!chunks.length || chunks.pop()[0] !== 0) return cb(new Error('invalid status'))
       if (chunks.length !== size) return cb(new Error('size mismatch'))
       cb(null, chunks.map(util.bufferToLong.bind(this)))
     })
