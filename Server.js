@@ -9,11 +9,11 @@ const util = require('./util')
 
 class Server {
   constructor (dbname, users, port) {
-    this._db = level('./mydb')
+    this._db = level(dbname)
+    this._users = users.map(u => crypto.createHash('md5').update(u).digest())
     this._server = net.createServer({
       allowHalfOpen: true
     }, this.handler.bind(this))
-    this._users = users.map(u => crypto.createHash('md5').update(u).digest())
     this._server.listen(port)
   }
   _hasUser (buf) {
