@@ -55,12 +55,14 @@ function handleList (socket) {
 }
 
 const server = net.createServer({
-    allowHalfOpen: true
-  }, (socket) => {
+  allowHalfOpen: true
+}, (socket) => {
+  console.log('connection', socket.remoteAddress, socket.remotePort)
   socket.setTimeout(10000, () => {
     socket.destroy()
   })
   socket.pipe(BufferList((err, data) => {
+    if (err) socket.end(new Buffer([1]))
     if (validHash.compare(data.slice(0, 16)) !== 0) {
       return socket.end(new Buffer([3]))
     }
